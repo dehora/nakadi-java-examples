@@ -1,5 +1,9 @@
 ### Changes
 
+#### 0.4.1
+
+- Add a token provider and custom scopes example
+
 #### 0.4.0
 
 - track the version of the client
