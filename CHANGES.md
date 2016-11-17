@@ -1,5 +1,16 @@
 ### Changes
 
+#### 0.4.0
+
+- track the version of the client
+- add subscription streaming examples
+- add subscription examples  
+- add event type examples 
+- add metrics examples 
+- add registry examples  
+- add certificate loading example 
+- add healthcheck examples 
+
 #### 0.0.0
 
 Initial release. 
