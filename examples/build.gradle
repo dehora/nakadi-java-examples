@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-  compile 'net.dehora.nakadi:nakadi-java-client:0.3.0'
+  compile 'net.dehora.nakadi:nakadi-java-client:0.4.0'
   compile 'org.slf4j:slf4j-api:1.7.21'
   compile 'ch.qos.logback:logback-classic:1.1.7'
 //  compile 'net.dehora.nakadi:nakadi-java-metrics:0.0.0'
