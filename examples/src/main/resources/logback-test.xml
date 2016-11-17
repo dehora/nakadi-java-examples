@@ -1,0 +1,23 @@
+<configuration>
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!--
+
+    All logs use "NakadiClient" as the %logger name
+
+    Logging contexts:
+
+    cursor_context: tags logs with with the StreamCursorContext details when checkpointing subscription streams.
+
+    security_context: tags logs with "[security_support]" when using the cert installation option.
+
+     -->
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{5} %msg %X{cursor_context}%X{security_context}%n</pattern>
+    </encoder>
+  </appender>
+
+  <root level="info">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>
