@@ -1,5 +1,10 @@
 ### Changes
 
+#### 0.5.0
+
+- Add a zign token provider example
+- Update to 0.5.0
+
 #### 0.4.1
 
 - Add a token provider and custom scopes example
