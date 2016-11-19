@@ -1,12 +1,14 @@
 package nakadi.examples.oauth;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import nakadi.BusinessEventMapped;
-import nakadi.EventMetadata;
-import nakadi.EventResource;
+import nakadi.EventType;
+import nakadi.EventTypeResource;
+import nakadi.ExponentialRetry;
 import nakadi.NakadiClient;
-import nakadi.examples.events.PriorityRequisition;
 import nakadi.token.zign.TokenProviderZign;
+
+import static java.lang.System.out;
 
 public class ZignTokenProviderMain {
 
@@ -22,15 +24,13 @@ public class ZignTokenProviderMain {
    */
   public static void main(String[] args) {
     /*
-    create a zign token provider and start it. This will run in the background and refresh
+    create a zign token provider and start it. This can run in the background and refresh
     on a timer using refreshEvery. The waitFor value says how long the background call should
     block for each token call in the refresh cycle before giving up.
      */
     TokenProviderZign zignTokenProvider = TokenProviderZign.newBuilder()
         .refreshEvery(60, TimeUnit.SECONDS)
         .waitFor(5, TimeUnit.SECONDS)
-        // default scopes added automatically
-        .scopes("gordian-blade-scope")
         .build();
 
     /*
@@ -40,7 +40,17 @@ public class ZignTokenProviderMain {
     are fetched, unless there's an issue with the underlying zign call.
      */
     zignTokenProvider.start();
+    /*
+    normally, you'd let this run in the background, but for the example just load the
+    tokens once and stop
+     */
+    zignTokenProvider.stop();
 
+    /*
+    make sure this service is enabled to work with tokens. also if you're calling
+    a service with self-signed certs, you'll want those added to the jvm keystore
+    or loaded in via certificatePath (see CertsMain for an example)
+     */
     String baseURI = "http://localhost:" + 9080;
 
     NakadiClient client = NakadiClient.newBuilder()
@@ -48,16 +58,48 @@ public class ZignTokenProviderMain {
         .tokenProvider(zignTokenProvider)
         .build();
 
-    BusinessEventMapped<PriorityRequisition> event = new BusinessEventMapped<PriorityRequisition>()
-        .metadata(new EventMetadata())
-        .data(new PriorityRequisition("22"));
+    EventTypeResource eventTypes = client.resources().eventTypes();
 
-    EventResource events = client.resources().events();
+    eventTypes
+        .retryPolicy(buildExponentialRetry(3))
+        .list()
+        .iterable()
+        .forEach(et -> {
+          out.println("event type: " + et.name());
+          out.println(
+              "--------------------------------------------------------------------------------------");
+          out.println("owner: " + et.owningApplication());
+          out.println("category: " + et.category());
+          out.println("partition strategy: " + et.partitionStrategy());
+          out.println("partition keys: " + et.partitionKeyFields());
 
-    /*
-    use the default scope (in this case it's NAKADI_EVENT_STREAM_WRITE
-     */
-    events.send("priority-requisition-biz", event);
+          out.println(
+              String.format("retention: %d (%d hours)", et.options().retentionTimeMillis(),
+                  TimeUnit.MILLISECONDS.toHours(et.options().retentionTimeMillis())));
+          out.println("enrichments: " + et.enrichmentStrategies());
+          out.println("read scopes: " + et.readScopes());
+          out.println("write scopes: " + et.writeScopes());
+          out.println("schema follows:");
+          out.println(unescapeSchema(client, et));
+          out.println("\n");
+        });
+  }
 
+  private static String unescapeSchema(NakadiClient client, EventType et) {
+    try {
+      String unescaped = et.schema().schema().replace("\\", "");
+      return client.jsonSupport().toJson(client.jsonSupport().fromJson(unescaped, Map.class));
+    } catch (Exception e) {
+      out.println("error processing schema, will return raw " + e.getMessage());
+      return et.schema().schema();
+    }
+  }
+
+  private static ExponentialRetry buildExponentialRetry(int maxAttempts) {
+    return ExponentialRetry.newBuilder()
+        .initialInterval(1000, TimeUnit.MILLISECONDS)
+        .maxAttempts(maxAttempts)
+        .maxInterval(3000, TimeUnit.MILLISECONDS)
+        .build();
   }
 }

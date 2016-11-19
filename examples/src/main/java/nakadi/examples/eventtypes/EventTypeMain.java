@@ -10,7 +10,6 @@ import nakadi.EventTypeSchema;
 import nakadi.ExponentialRetry;
 import nakadi.NakadiClient;
 import nakadi.Response;
-import nakadi.SubscriptionCollection;
 
 public class EventTypeMain {
 
