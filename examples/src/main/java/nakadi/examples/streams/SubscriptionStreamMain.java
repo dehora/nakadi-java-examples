@@ -1,6 +1,7 @@
 package nakadi.examples.streams;
 
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import nakadi.DataChangeEvent;
@@ -26,7 +27,8 @@ public class SubscriptionStreamMain {
     String baseURI = "http://localhost:" + 9080;
     NakadiClient client = NakadiClient.newBuilder()
         //.enableHttpLogging() // enable this if you want to see http traces
-        .baseURI(baseURI).build();
+        .baseURI(baseURI)
+        .build();
 
     String eventTypeName = "meidan-subscription-example-" + new Random().nextInt(999);
     Subscription subscription = setup(eventTypeName, client);
@@ -136,13 +138,18 @@ public class SubscriptionStreamMain {
   }
 
   public static Subscription setup(String eventTypeName, NakadiClient client) {
-    EventType et = createDataChangeEvent(eventTypeName, client);
+    EventType et = getOrCreateDataChangeEvent(eventTypeName, client);
     return createSubscription(et.name(), client);
   }
 
-  private static EventType createDataChangeEvent(String eventTypeName, NakadiClient client) {
+  private static EventType getOrCreateDataChangeEvent(String eventTypeName, NakadiClient client) {
 
     EventTypeResource eventTypes = client.resources().eventTypes();
+
+    Optional<EventType> eventTypeMaybe = eventTypes.tryFindByName(eventTypeName);
+    if(eventTypeMaybe.isPresent()) {
+      return eventTypeMaybe.get();
+    }
 
     String owningApplication = "weyland";
     EventTypeOptions options = new EventTypeOptions().retentionTime(3, TimeUnit.DAYS);
